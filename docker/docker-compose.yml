@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  payments-service:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=postgres
+      - DB_USERNAME=payments_user
+      - DB_PASSWORD=payments_pass
+      - REDIS_HOST=redis
+      - JWT_SECRET=mySecretKey
+      - AUTHORIZE_NET_LOGIN_ID=your_login_id
+      - AUTHORIZE_NET_TRANSACTION_KEY=your_transaction_key
+      - AUTHORIZE_NET_SANDBOX=true
+      - AUTHORIZE_NET_WEBHOOK_SIGNATURE_KEY=your_webhook_key
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - payments-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=payments_db_dev
+      - POSTGRES_USER=payments_user
+      - POSTGRES_PASSWORD=payments_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - payments-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - payments-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  payments-network:
+    driver: bridge
+

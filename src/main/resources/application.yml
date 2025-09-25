@@ -1,0 +1,103 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: payments-service
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payments_db
+    username: ${DB_USERNAME:payments_user}
+    password: ${DB_PASSWORD:payments_pass}
+    driver-class-name: org.postgresql.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 25
+          batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
+        connection:
+          provider_disables_autocommit: true
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+  
+  liquibase:
+    change-log: classpath:db/migration/changelog.xml
+    enabled: true
+
+# Application specific configuration
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:mySecretKey}
+      expiration: 86400 # 24 hours in seconds
+  
+  idempotency:
+    ttl-hours: 24
+    redis-ttl-minutes: 60
+  
+  authorize-net:
+    login-id: ${AUTHORIZE_NET_LOGIN_ID:your_login_id}
+    transaction-key: ${AUTHORIZE_NET_TRANSACTION_KEY:your_transaction_key}
+    sandbox: ${AUTHORIZE_NET_SANDBOX:true}
+    webhook-signature-key: ${AUTHORIZE_NET_WEBHOOK_SIGNATURE_KEY:your_webhook_key}
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging configuration
+logging:
+  level:
+    com.payments: INFO
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+# OpenAPI/Swagger configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  show-actuator: true
